@@ -1,5 +1,7 @@
 import Foundation
-import APIKit
+#if os(Linux)
+import FoundationNetworking
+#endif
 
 protocol BaseRequest: Request {
     var token: APIToken { get }

@@ -1,6 +1,5 @@
 import Foundation
 import ArgumentParser
-import APIKit
 
 struct AppleDeviceManager: ParsableCommand {
     static var configuration = CommandConfiguration(
