@@ -38,7 +38,7 @@ extension AppleDeviceManager {
             Session.send(GetDeivcesRequest(token: token), callbackQueue: .sessionQueue) { result in
                 switch result {
                     case .success(let response):
-                        print(response)
+                        DevicePrinter().print(response.data)
                         semaphore.signal()
                     case .failure(let error):
                         AppleDeviceManager.exit(withError: error)
