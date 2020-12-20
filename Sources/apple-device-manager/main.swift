@@ -1,6 +1,5 @@
 import Foundation
 import ArgumentParser
-import APIKit
 
 struct AppleDeviceManager: ParsableCommand {
     static var configuration = CommandConfiguration(
@@ -13,7 +12,10 @@ struct AppleDeviceManager: ParsableCommand {
 extension AppleDeviceManager {
     struct Options: ParsableArguments {
         @Option(help: "Path to the private key.", completion: .file(extensions: [".p8"]))
-        var keyPath: String
+        var keyPath: String?
+
+        @Option(help: "Content of the private key.", completion: .file(extensions: [".p8"]))
+        var keyValue: String?
 
         @Option(help: "Id of the private key.")
         var keyId: String
@@ -21,8 +23,18 @@ extension AppleDeviceManager {
         @Option(help: "Id of the issuer of private key.")
         var issuerId: String
 
+        func validate() throws {
+            if keyPath == nil && keyValue == nil {
+                throw ValidationError("Either '--key-path' or '--key-value' must be given.")
+            }
+        }
+
         func getKey() throws -> APIKey {
-            let keyValue = try String(contentsOfFile: keyPath)
+            if let keyValue = self.keyValue {
+                return APIKey(id: keyId, issuerId: issuerId, value: keyValue.replacingOccurrences(of: "\\n", with: "\n"))
+            }
+
+            let keyValue = try String(contentsOfFile: keyPath!)
             return APIKey(id: keyId, issuerId: issuerId, value: keyValue)
         }
     }
@@ -34,17 +46,13 @@ extension AppleDeviceManager {
             let key = try baseOptions.getKey()
             let token = try APIToken.encode(key)
 
-            let semaphore = DispatchSemaphore(value: 0)
-            Session.send(GetDeivcesRequest(token: token), callbackQueue: .sessionQueue) { result in
-                switch result {
-                    case .success(let response):
-                        DevicePrinter().print(response.data)
-                        semaphore.signal()
-                    case .failure(let error):
-                        AppleDeviceManager.exit(withError: error)
-                }
+            let result = Session.send(GetDeivcesRequest(token: token))
+            switch result {
+                case .success(let response):
+                    DevicePrinter().print(response.data)
+                case .failure(let error):
+                    AppleDeviceManager.exit(withError: error)
             }
-            semaphore.wait()
         }
     }
 
@@ -58,19 +66,15 @@ extension AppleDeviceManager {
             let key = try baseOptions.getKey()
             let token = try APIToken.encode(key)
 
-            let semaphore = DispatchSemaphore(value: 0)
             var devices: [Device] = []
 
-            Session.send(GetDeivcesRequest(token: token), callbackQueue: .sessionQueue) { result in
-                switch result {
-                    case .success(let response):
-                        devices = response.data
-                        semaphore.signal()
-                    case .failure(let error):
-                        AppleDeviceManager.exit(withError: error)
-                }
+            let result = Session.send(GetDeivcesRequest(token: token))
+            switch result {
+                case .success(let response):
+                    devices = response.data
+                case .failure(let error):
+                    AppleDeviceManager.exit(withError: error)
             }
-            semaphore.wait()
 
             devices.forEach { device in
                 let years = Calendar.current.dateComponents([.year], from: device.attributes.addedDate, to: Date()).year ?? 0
@@ -78,18 +82,14 @@ extension AppleDeviceManager {
                 if years < age { return }
                 if case .disabled = device.attributes.status { return }
 
-                let semaphore = DispatchSemaphore(value: 0)
                 let body = DeviceUpdateRequest(data: .init(attributes: .init(status: .disabled), id: device.id))
-                Session.send(PatchDevicesRequest(token: token, body: body), callbackQueue: .sessionQueue) { result in
-                    switch result {
-                        case .success(let response):
-                            DevicePrinter().print(response.data)
-                            semaphore.signal()
-                        case .failure(let error):
-                            AppleDeviceManager.exit(withError: error)
-                    }
+                let result = Session.send(PatchDevicesRequest(token: token, body: body))
+                switch result {
+                    case .success(let response):
+                        DevicePrinter().print(response.data)
+                    case .failure(let error):
+                        AppleDeviceManager.exit(withError: error)
                 }
-                semaphore.wait()
             }
         }
     }

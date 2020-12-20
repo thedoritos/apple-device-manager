@@ -1,4 +1,4 @@
-import APIKit
+import Foundation
 
 /// https://developer.apple.com/documentation/appstoreconnectapi/modify_a_registered_device
 struct PatchDevicesRequest: BaseRequest {

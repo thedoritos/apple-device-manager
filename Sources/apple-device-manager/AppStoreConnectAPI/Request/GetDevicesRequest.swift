@@ -1,4 +1,4 @@
-import APIKit
+import Foundation
 
 struct GetDeivcesRequest: BaseRequest {
     typealias Response = DevicesResopnse

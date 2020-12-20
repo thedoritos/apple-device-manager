@@ -1,0 +1,53 @@
+name: Disable devices
+
+on:
+  push:
+    tags: [ run-wf-disable-devices ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'
+
+jobs:
+  deploy:
+    container: macos-10.15
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache executable
+        uses: actions/cache@v2
+        id: cache-exec
+        with:
+          path: /usr/local/bin/adm
+          key: exec
+
+      - name: Build executable
+        if: steps.cache-exec.outputs.cache-hit != 'true'
+        run: |
+          swift build --configuration release
+          cp .build/release/apple-device-manager /usr/local/bin/adm
+
+      - name: List & disable devices
+        env:
+          ADM_KEY_ID: ${{ secrets.ADM_KEY_ID }}
+          ADM_ISSUER_ID: ${{ secrets.ADM_ISSUER_ID }}
+          ADM_KEY_VALUE: ${{ secrets.ADM_KEY_VALUE }}
+        run: |
+          adm list --key-id=$ADM_KEY_ID --issuer-id=$ADM_ISSUER_ID --key-value=$ADM_KEY_VALUE
+          adm disable --age=1 --key-id=$ADM_KEY_ID --issuer-id=$ADM_ISSUER_ID --key-value=$ADM_KEY_VALUE
+
+      - name: Notify on Slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: job,took
+          custom_payload: |
+            {
+              username: 'Apple Device Manager',
+              icon_emoji: ':angel:',
+              attachments: [{
+                color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
+                text: `Job ${process.env.AS_JOB} finished in ${process.env.AS_TOOK}`,
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
