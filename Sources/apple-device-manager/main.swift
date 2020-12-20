@@ -12,7 +12,10 @@ struct AppleDeviceManager: ParsableCommand {
 extension AppleDeviceManager {
     struct Options: ParsableArguments {
         @Option(help: "Path to the private key.", completion: .file(extensions: [".p8"]))
-        var keyPath: String
+        var keyPath: String?
+
+        @Option(help: "Content of the private key.", completion: .file(extensions: [".p8"]))
+        var keyValue: String?
 
         @Option(help: "Id of the private key.")
         var keyId: String
@@ -20,8 +23,18 @@ extension AppleDeviceManager {
         @Option(help: "Id of the issuer of private key.")
         var issuerId: String
 
+        func validate() throws {
+            if keyPath == nil && keyValue == nil {
+                throw ValidationError("Either '--key-path' or '--key-value' must be given.")
+            }
+        }
+
         func getKey() throws -> APIKey {
-            let keyValue = try String(contentsOfFile: keyPath)
+            if let keyValue = self.keyValue {
+                return APIKey(id: keyId, issuerId: issuerId, value: keyValue.replacingOccurrences(of: "\\n", with: "\n"))
+            }
+
+            let keyValue = try String(contentsOfFile: keyPath!)
             return APIKey(id: keyId, issuerId: issuerId, value: keyValue)
         }
     }
