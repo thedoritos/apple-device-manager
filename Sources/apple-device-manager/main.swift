@@ -33,17 +33,13 @@ extension AppleDeviceManager {
             let key = try baseOptions.getKey()
             let token = try APIToken.encode(key)
 
-            let semaphore = DispatchSemaphore(value: 0)
-            Session.send(GetDeivcesRequest(token: token), callbackQueue: .sessionQueue) { result in
-                switch result {
-                    case .success(let response):
-                        DevicePrinter().print(response.data)
-                        semaphore.signal()
-                    case .failure(let error):
-                        AppleDeviceManager.exit(withError: error)
-                }
+            let result = Session.send(GetDeivcesRequest(token: token))
+            switch result {
+                case .success(let response):
+                    DevicePrinter().print(response.data)
+                case .failure(let error):
+                    AppleDeviceManager.exit(withError: error)
             }
-            semaphore.wait()
         }
     }
 
@@ -57,19 +53,15 @@ extension AppleDeviceManager {
             let key = try baseOptions.getKey()
             let token = try APIToken.encode(key)
 
-            let semaphore = DispatchSemaphore(value: 0)
             var devices: [Device] = []
 
-            Session.send(GetDeivcesRequest(token: token), callbackQueue: .sessionQueue) { result in
-                switch result {
-                    case .success(let response):
-                        devices = response.data
-                        semaphore.signal()
-                    case .failure(let error):
-                        AppleDeviceManager.exit(withError: error)
-                }
+            let result = Session.send(GetDeivcesRequest(token: token))
+            switch result {
+                case .success(let response):
+                    devices = response.data
+                case .failure(let error):
+                    AppleDeviceManager.exit(withError: error)
             }
-            semaphore.wait()
 
             devices.forEach { device in
                 let years = Calendar.current.dateComponents([.year], from: device.attributes.addedDate, to: Date()).year ?? 0
@@ -77,18 +69,14 @@ extension AppleDeviceManager {
                 if years < age { return }
                 if case .disabled = device.attributes.status { return }
 
-                let semaphore = DispatchSemaphore(value: 0)
                 let body = DeviceUpdateRequest(data: .init(attributes: .init(status: .disabled), id: device.id))
-                Session.send(PatchDevicesRequest(token: token, body: body), callbackQueue: .sessionQueue) { result in
-                    switch result {
-                        case .success(let response):
-                            DevicePrinter().print(response.data)
-                            semaphore.signal()
-                        case .failure(let error):
-                            AppleDeviceManager.exit(withError: error)
-                    }
+                let result = Session.send(PatchDevicesRequest(token: token, body: body))
+                switch result {
+                    case .success(let response):
+                        DevicePrinter().print(response.data)
+                    case .failure(let error):
+                        AppleDeviceManager.exit(withError: error)
                 }
-                semaphore.wait()
             }
         }
     }
