@@ -2,15 +2,6 @@
   "object": {
     "pins": [
       {
-        "package": "APIKit",
-        "repositoryURL": "https://github.com/ishkawa/APIKit.git",
-        "state": {
-          "branch": null,
-          "revision": "f24f05616f8972fec937c2f069491468a8fabf85",
-          "version": "5.1.0"
-        }
-      },
-      {
         "package": "jwt-kit",
         "repositoryURL": "https://github.com/vapor/jwt-kit.git",
         "state": {
