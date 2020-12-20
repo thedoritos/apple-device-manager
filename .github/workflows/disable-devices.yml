@@ -32,8 +32,8 @@ jobs:
           ADM_ISSUER_ID: ${{ secrets.ADM_ISSUER_ID }}
           ADM_KEY_VALUE: ${{ secrets.ADM_KEY_VALUE }}
         run: |
-          adm list --key-id=$ADM_KEY_ID --issuer-id=$ADM_ISSUER_ID --key-value=$ADM_KEY_VALUE
-          adm disable --age=1 --key-id=$ADM_KEY_ID --issuer-id=$ADM_ISSUER_ID --key-value=$ADM_KEY_VALUE
+          adm list --key-id=$ADM_KEY_ID --issuer-id=$ADM_ISSUER_ID --key-value="$ADM_KEY_VALUE"
+          adm disable --age=1 --key-id=$ADM_KEY_ID --issuer-id=$ADM_ISSUER_ID --key-value="$ADM_KEY_VALUE"
 
       - name: Notify on Slack
         uses: 8398a7/action-slack@v3
