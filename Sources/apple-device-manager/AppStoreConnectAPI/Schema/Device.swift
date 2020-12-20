@@ -15,7 +15,7 @@ struct Device: Decodable {
     }
 }
 
-enum DeviceStatus: String, Decodable {
+enum DeviceStatus: String, Codable {
     case enabled = "ENABLED"
     case disabled = "DISABLED"
 }
